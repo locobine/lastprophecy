@@ -85,7 +85,8 @@ void Inimigo::inicializar(int tipo, float x_, float y_)
 		spIni.setFrameTime(seconds(0.2));
 		spIni.setLooped(true);
 
-		animaAtual = &animParado;
+		nAnimacaoAtual = Andando2;
+		animaAtual = &animAndando;
 		nAnimacaoAtual = 0;
 		vida = 100;
 		ataque = 10;
@@ -159,7 +160,8 @@ void Inimigo::inicializar(int tipo, float x_, float y_)
 		spIni.setFrameTime(seconds(0.2));
 		spIni.setLooped(true);
 
-		animaAtual = &animParado;
+		nAnimacaoAtual = Andando2;
+		animaAtual = &animAndando;
 		nAnimacaoAtual = 0;
 		vida = 150;
 		ataque = 15;
@@ -234,7 +236,8 @@ void Inimigo::inicializar(int tipo, float x_, float y_)
 		spIni.setFrameTime(seconds(0.2));
 		spIni.setLooped(true);
 
-		animaAtual = &animParado;
+		nAnimacaoAtual = Andando2;
+		animaAtual = &animAndando;
 		nAnimacaoAtual = 0;
 		vida = 200;
 		ataque = 25;
@@ -245,14 +248,16 @@ void Inimigo::inicializar(int tipo, float x_, float y_)
 	morto = false;
 	podeAtacar = false;
 	atacando = false;
-	speed = 1.0;
+	speed = 0.1;
 	nHitsRecebidos = 0;
-	estadoAtual = Stopped;
+	estadoAtual = Roaming;
 	xInicial = x;
 	yInicial = y;
 	acidou = false;
 	tempoAcidar.contaAte(4.0);
 	jaAcidou = false;
+	speedRoamingY = 1;
+	speedRoamingX = 1;
 }
 
 void Inimigo::atualizar()
@@ -263,60 +268,70 @@ void Inimigo::atualizar()
 		if (estadoAtual == Roaming)
 		{
 			int difY, difX;
-			difY = y - yInicial;
+			difY = yInicial - y;
 			if (difY < 0)
 			{
 				difY *= -1;
 			}
-			difX = x - xInicial;
+			if (difY > 5)
+			{
+				speedRoamingY *= -1;
+			}
+			difX = xInicial - x;
 			if (difX < 0)
 			{
 				difX *= -1;
 			}
-			int actionAtual = rand() % 4;
-			switch (actionAtual)
+			if (difX > 5)
 			{
-			case 0:
-				if (difX < 6)
+				speedRoamingX *= -1;
+			}
+			if (speedRoamingX == -1)
+			{
+				andaEsquerda();
+			}
+			else
+			{
+				andaDireita();
+			}
+			if (speedRoamingY == -1)
+			{
+				andaCima();
+			}
+			else
+			{
+				andaBaixo();
+			}
+			
+			if (nAnimacaoAtual != TomaDano2)
+			{
+				
+				if (nHitsRecebidos >= 3)
 				{
-					andaEsquerda();
+					estadoAtual = Stopped;
 				}
-				break;
-			case 1:
-
-				break;
-			case 2:
-
-				break;
-			case 3:
-
-				break;
+				if (tempoAcidar.checaConta() && tipoCobra == 1)
+				{
+					
+					estadoAtual = Aciding;
+					
+				}
 			}
 		}
 		else if (estadoAtual == Stopped)
 		{
-			if (nAnimacaoAtual != TomaDano2)
+			if (nAnimacaoAtual != Parado2)
 			{
-				if (nAnimacaoAtual != Parado2)
-				{
-					animaAtual = &animParado;
-					nAnimacaoAtual = Parado2;
-					spIni.setFrameTime(seconds(0.2));
-					spIni.setLooped(true);
-				}
-				if (nHitsRecebidos >= 3)
-				{
-					podeAtacar = true;
-					estadoAtual = Reacting;
-					nHitsRecebidos = 0;
-				}
-				if (tempoAcidar.checaConta() && tipoCobra == 1)
-				{
-					if (nAnimacaoAtual != Especializando2)
-					{
-						estadoAtual = Aciding;
-					}
-				}
+				animaAtual = &animParado;
+				nAnimacaoAtual = Parado2;
+				spIni.setFrameTime(seconds(0.2));
+				spIni.setLooped(false);
+			}
+			if (!spIni.isPlaying())
+			{
+				podeAtacar = true;
+				estadoAtual = Reacting;
+				nHitsRecebidos = 0;
 			}
 		}
 		else if (estadoAtual == Aciding)
@@ -327,6 +342,16 @@ void Inimigo::atualizar()
 				nAnimacaoAtual = Especializando2;
 				spIni.setFrameTime(seconds(0.6));
 				spIni.setLooped(false);
+			}
+			if (spIni.getCurrentFrame() == 1 && !jaAcidou)
+			{
+				acidou = true;
+				jaAcidou = true;
+			}
+			if (!spIni.isPlaying())
+			{
+				estadoAtual = Roaming;
+				jaAcidou = false;
 			}
 		}
 		else if (estadoAtual == Reacting)
@@ -339,35 +364,21 @@ void Inimigo::atualizar()
 		if (atacando && !spIni.isPlaying())
 		{
 			cout << "entrou em atacando pelo menos?" << endl;
-			animaAtual = &animParado;
-			nAnimacaoAtual = Parado2;
+			animaAtual = &animAndando;
+			nAnimacaoAtual = Andando2;
 			spIni.setFrameTime(seconds(0.2));
 			spIni.setLooped(true);
 			atacando = false;
-			estadoAtual = Stopped;
+			estadoAtual = Roaming;
 			podeAtacar = false;
 			//atacou = true;
 		}
-		if (estadoAtual == Aciding)
-		{
-			if (spIni.getCurrentFrame() == 1 && !jaAcidou)
-			{
-				acidou = true;
-				jaAcidou = true;
-			}
-			
-			if (!spIni.isPlaying())
-			{
-				estadoAtual = Stopped;
-				jaAcidou = false;
-			}
-		}
 		if (nAnimacaoAtual == TomaDano2 && !spIni.isPlaying())
 		{
-			animaAtual = &animParado;
+			animaAtual = &animAndando;
 			spIni.setFrameTime(seconds(0.2));
 			spIni.setLooped(true);
-			nAnimacaoAtual = Parado2;
+			nAnimacaoAtual = Andando2;
 		}
 		if (tempoAtaque.checaConta())
 		{
@@ -522,7 +533,7 @@ void Inimigo::andaCima()
 		spIni.setLooped(true);
 		spIni.setFrameTime(seconds(0.2));
 	}
-	y += speed;
+	y -= speed;
 }
 
 void Inimigo::andaEsquerda()
@@ -534,7 +545,7 @@ void Inimigo::andaEsquerda()
 		spIni.setLooped(true);
 		spIni.setFrameTime(seconds(0.2));
 	}
-	y += speed;
+	x -= speed;
 }
 
 void Inimigo::andaDireita()
@@ -546,5 +557,5 @@ void Inimigo::andaDireita()
 		spIni.setLooped(true);
 		spIni.setFrameTime(seconds(0.2));
 	}
-	y += speed;
+	x += speed;
 }

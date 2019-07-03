@@ -65,6 +65,7 @@ private:
 	int nHitsRecebidos, tipoCobra;
 	float xInicial, yInicial;
 	bool acidou, jaAcidou;
+	float speedRoamingY, speedRoamingX;
 	Timer tempoAcidar;
 };
 
